@@ -249,7 +249,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     public double getGyroHeading() {
-        return getHeadingStatusSignalType().getValueAsDouble();
+        double rawYaw = getHeadingStatusSignalType().getValueAsDouble();
+        double yawWrapped = rawYaw % 360;
+        return yawWrapped;
+    }
+
+    public void gyroReset() {
+        this.seedFieldCentric();
+        imu.reset();
     }
 
     private void startSimThread() {

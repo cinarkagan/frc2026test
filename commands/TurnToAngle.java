@@ -61,7 +61,7 @@ public class TurnToAngle extends Command {
   @Override
   public boolean isFinished() {
     // End when the controller is at the reference.
-    return false;//controller.atSetpoint();
+    return controller.atSetpoint();
   }
 
   @Override

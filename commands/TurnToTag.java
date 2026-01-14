@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
 import frc.robot.constants.DriveConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.LocalizationSubsystem;
 
 /** A command that will turn the robot to the specified angle. */
 public class TurnToTag extends Command {
@@ -18,7 +19,7 @@ public class TurnToTag extends Command {
   CommandSwerveDrivetrain drivetrain;
   SwerveRequest.FieldCentric drive;
   double MaxAngularRate;
-  public TurnToTag(CommandSwerveDrivetrain drivetrain, double MaxAngularRate) {
+  public TurnToTag(CommandSwerveDrivetrain drivetrain, double MaxAngularRate,LocalizationSubsystem localization) {
     /*super(
         new PIDController(DriveConstants.turnP, DriveConstants.turnI, DriveConstants.turnD),
         drivetrain::getHeading,
@@ -41,7 +42,7 @@ public class TurnToTag extends Command {
     // Set the controller tolerance - the delta tolerance ensures the robot is stationary at the
     // setpoint before it is considered as having reached the reference
     controller.setTolerance(DriveConstants.turnToleranceDeg, DriveConstants.turnToleranceDegPerSec);
-    controller.setSetpoint(0);
+    controller.setSetpoint(localization.getLimelightTagHeading());
 
     
     addRequirements(drivetrain);

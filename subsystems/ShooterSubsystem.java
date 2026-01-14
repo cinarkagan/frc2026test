@@ -25,8 +25,10 @@ public class ShooterSubsystem extends SubsystemBase {
   private final TalonFX shooter2 = new TalonFX(ShooterConstants.shooter2_ID, ShooterConstants.canbus);
   private final TalonFX feeder = new TalonFX(ShooterConstants.feeder_ID, ShooterConstants.canbus);
 
+
   public boolean enabled = false;
-  public double goalRPM = 3500;
+  public double goalRPM = 0;
+  public double goalRPM2 = 0;
 
     private final VelocityVoltage m_velocityVoltage = new VelocityVoltage(0).withSlot(0);
 
@@ -62,12 +64,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-            System.out.println(goalRPM);
-            System.out.println(shooter1.getVelocity().getValueAsDouble()*60);
-            System.out.println(shooter2.getVelocity().getValueAsDouble()*60);
-            System.out.println((shooter1.getVelocity().getValueAsDouble()*60)/(1.5));
+            //System.out.println(goalRPM);
+            //System.out.println(shooter1.getVelocity().getValueAsDouble()*60);
+            //System.out.println(shooter2.getVelocity().getValueAsDouble()*60);
+            //System.out.println((shooter1.getVelocity().getValueAsDouble()*60)/(1.5));
             shooter1.setControl(m_velocityVoltage.withVelocity(goalRPM/60));
-            shooter2.setControl(m_velocityVoltage.withVelocity(-(goalRPM/60)));
+            shooter2.setControl(m_velocityVoltage.withVelocity(-(goalRPM2/60)));
             feeder.setControl(m_velocityVoltage.withVelocity(-(ShooterConstants.feederRPM/60)));
     }
 
