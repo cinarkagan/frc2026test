@@ -7,9 +7,9 @@ public class DriveConstants {
     public static double driveP = 0.0132;
     public static double driveI = 0;
     public static double driveD = 0.0054;
-    public static double turnP = 0.0314;
+    public static double turnP = 8;
     public static double turnI = 0;
-    public static double turnD = 0.0108;
+    public static double turnD = 0;
     public static double turnToleranceDeg = 3;
     public static double turnToleranceDegPerSec = 5;
 

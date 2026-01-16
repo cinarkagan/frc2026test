@@ -36,7 +36,7 @@ public class LocalizationSubsystem extends SubsystemBase {
         //LimelightHelpers.setPipelineIndex("", 0); // sonra sil
         //if (LimelightHelpers.getCurrentPipelineIndex("") == 0) {
             double robotYaw = drivetrain.getGyroHeading();
-            System.out.println(robotYaw);
+            //sSystem.out.println(robotYaw);
             LimelightHelpers.SetIMUMode("",2);
             LimelightHelpers.SetRobotOrientation("", robotYaw, 0.0, 0.0, 0.0, 0.0, 0.0);
             LimelightHelpers.PoseEstimate limelightMeasurementEstimate;

@@ -25,7 +25,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
     private double MaxSpeed = 0.75 * SwerveConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-    private double MaxAngularRate = RotationsPerSecond.of(0.5).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+    private double MaxAngularRate = RotationsPerSecond.of(0.6).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
     private boolean driveEnabled = true;
     /* Setting up bindings for necessary control of the swerve drive platform */
     public SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -51,7 +51,7 @@ public class RobotContainer {
         // Note that X is defined as forward according to WPILib convention,
         // and Y is defined as to the left according to WPILib convention.
         if (driveEnabled) {
-            drivetr+ain.setDefaultCommand(
+            drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() ->
                     drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
                         .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
@@ -68,8 +68,8 @@ public class RobotContainer {
 
         //joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
         //joystick.b().whileTrue(new TurnToAngle(180, drivetrain, drive,MaxAngularRate));
-        joystick.a().onTrue(shooterSubsystem.enableShooter());
-        joystick.b().onTrue(shooterSubsystem.disableShooter());
+        joystick.a().whileTrue(new TurnToAngle(66, drivetrain, drive,MaxAngularRate));
+        //joystick.b().onTrue(shooterSubsystem.disableShooter());
 
         /*joystick.b().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
