@@ -27,8 +27,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
   public boolean enabled = false;
-  public double goalRPM = 0;
-  public double goalRPM2 = 0;
+  public double goalRPM = 2800;
+  public double goalRPM2 = 3350;
 
     private final VelocityVoltage m_velocityVoltage = new VelocityVoltage(0).withSlot(0);
 
@@ -68,8 +68,8 @@ public class ShooterSubsystem extends SubsystemBase {
             //System.out.println(shooter1.getVelocity().getValueAsDouble()*60);
             //System.out.println(shooter2.getVelocity().getValueAsDouble()*60);
             //System.out.println((shooter1.getVelocity().getValueAsDouble()*60)/(1.5));
-            shooter1.setControl(m_velocityVoltage.withVelocity(goalRPM/60));
-            shooter2.setControl(m_velocityVoltage.withVelocity(-(goalRPM2/60)));
+            shooter1.setControl(m_velocityVoltage.withVelocity(-(goalRPM/60)));
+            shooter2.setControl(m_velocityVoltage.withVelocity(goalRPM2/60));
             feeder.setControl(m_velocityVoltage.withVelocity(-(ShooterConstants.feederRPM/60)));
     }
 

@@ -247,10 +247,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public StatusSignal<Angle> getHeadingStatusSignalType(){
         return imu.getYaw();
     }
+    
 
     public double getGyroHeading() {
         double rawYaw = getHeadingStatusSignalType().getValueAsDouble();
         double yawWrapped = rawYaw % 360;
+        if (yawWrapped < 0){
+            yawWrapped += 360;
+        }
         return yawWrapped;
     }
 

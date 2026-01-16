@@ -61,6 +61,10 @@ public class TurnToAngle extends Command {
   @Override
   public boolean isFinished() {
     // End when the controller is at the reference.
+    if (controller.atSetpoint())
+    {
+      System.out.println(controller.getError());
+    }
     return controller.atSetpoint();
   }
 
