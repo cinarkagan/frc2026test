@@ -1,4 +1,4 @@
-package frc.robot.constants;
+package frc.robot.robot.constants;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;

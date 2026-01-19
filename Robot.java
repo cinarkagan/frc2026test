@@ -7,15 +7,15 @@ package frc.robot;
 import com.ctre.phoenix6.HootAutoReplay;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
-public class Robot extends TimedRobot {
-    private Command m_autonomousCommand;
+import frc.robot.robot.state.RobotState;
+import frc.robot.robot.state.RobotAction;
 
+public class Robot extends TimedRobot {
     private final RobotContainer m_robotContainer;
 
-    /* log and replay timestamp and joystick data */
+    // Log and replay timestamp and joystick data
     private final HootAutoReplay m_timeAndJoystickReplay = new HootAutoReplay()
         .withTimestampReplay()
         .withJoystickReplay();
@@ -27,7 +27,9 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
-        CommandScheduler.getInstance().run(); 
+
+        // Still need CommandScheduler for subsystem periodic methods
+        CommandScheduler.getInstance().run();
     }
 
     @Override
@@ -41,28 +43,26 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
-        m_autonomousCommand = m_robotContainer.getAutonomousCommand();
-
-        if (m_autonomousCommand != null) {
-            CommandScheduler.getInstance().schedule(m_autonomousCommand);
-        }
+        m_robotContainer.prepareAutonomous();
     }
 
     @Override
-    public void autonomousPeriodic() {}
+    public void autonomousPeriodic() {
+        runControllerLoop();
+    }
 
     @Override
     public void autonomousExit() {}
 
     @Override
     public void teleopInit() {
-        if (m_autonomousCommand != null) {
-            CommandScheduler.getInstance().cancel(m_autonomousCommand);
-        }
+        m_robotContainer.prepareTeleop();
     }
 
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        runControllerLoop();
+    }
 
     @Override
     public void teleopExit() {}
@@ -80,4 +80,22 @@ public class Robot extends TimedRobot {
 
     @Override
     public void simulationPeriodic() {}
+
+    /**
+     * Core controller loop - runs each periodic in teleop and auto.
+     * 1. Build robot state from subsystems
+     * 2. Pass state to active controller
+     * 3. Get action from controller
+     * 4. Execute action on robot
+     */
+    private void runControllerLoop() {
+        // 1. Build current robot state
+        RobotState state = m_robotContainer.robotCore.buildState();
+
+        // 2. Get action from active controller
+        RobotAction action = m_robotContainer.getActiveController().update(state);
+
+        // 3. Execute the action
+        m_robotContainer.robotCore.executeAction(action);
+    }
 }
