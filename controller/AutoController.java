@@ -1,105 +1,64 @@
 package frc.robot.controller;
 
-import frc.robot.robot.state.RobotState;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.controller.auto.AutoCommands;
 import frc.robot.robot.state.RobotAction;
-import frc.robot.robot.state.RobotAction.DriveAction;
-import frc.robot.robot.state.RobotAction.ShooterAction;
-
-import java.util.ArrayList;
-import java.util.List;
+import frc.robot.robot.state.RobotState;
+import frc.robot.robot.subsystems.CommandSwerveDrivetrain;
 
 /**
- * State machine-based autonomous controller.
- * Executes a sequence of waypoints based on robot state feedback.
+ * Autonomous controller that uses WPILib's native CommandScheduler.
+ * 
+ * This controller:
+ * - Schedules commands through WPILib's CommandScheduler
+ * - Uses SendableChooser for dashboard auto selection
+ * - Integrates with PathPlanner when configured
+ * 
+ * Unlike the old implementation, this does NOT manually call command.execute().
+ * Commands are scheduled once and run by WPILib automatically.
  */
 public class AutoController implements Controller {
 
-    // =========== STATE DEFINITIONS ===========
-    public enum AutoState {
-        IDLE,
-        DRIVING_TO_POINT,
-        TURNING,
-        WAITING,
-        SHOOTING,
-        FINISHED
+    private final CommandSwerveDrivetrain drivetrain;
+    private final SendableChooser<Command> autoChooser;
+    
+    private Command currentCommand;
+    private boolean hasScheduled = false;
+
+    public AutoController(CommandSwerveDrivetrain drivetrain) {
+        this.drivetrain = drivetrain;
+        this.autoChooser = AutoCommands.createChooser(drivetrain);
     }
 
-    // =========== WAYPOINT CLASS ===========
-    public static class Waypoint {
-        public final double x;
-        public final double y;
-        public final Double heading;
-        public final WaypointAction action;
+    // =========== COMMAND ACCESS ===========
 
-        public enum WaypointAction { NONE, SHOOT, WAIT }
-
-        public Waypoint(double x, double y) {
-            this(x, y, null, WaypointAction.NONE);
-        }
-
-        public Waypoint(double x, double y, Double heading) {
-            this(x, y, heading, WaypointAction.NONE);
-        }
-
-        public Waypoint(double x, double y, Double heading, WaypointAction action) {
-            this.x = x;
-            this.y = y;
-            this.heading = heading;
-            this.action = action;
-        }
+    /**
+     * Get the currently selected auto command from the dashboard.
+     */
+    public Command getSelectedCommand() {
+        Command selected = autoChooser.getSelected();
+        return selected != null ? selected : Commands.none();
     }
 
-    // =========== STATE ===========
-    private AutoState currentState = AutoState.IDLE;
-    private final List<Waypoint> waypoints = new ArrayList<>();
-    private int currentWaypointIndex = 0;
-
-    // Tolerances
-    private final double positionTolerance = 0.15;
-    private final double angleTolerance = 3.0;
-
-    // Timing
-    private double stateStartTime = 0;
-    private double waitDuration = 2.0;
-    private double shootDuration = 2.0;
-
-    // Current target
-    private Waypoint currentTarget = null;
-    private Double turnTarget = null;
-
-    public AutoController() {}
-
-    // =========== WAYPOINT MANAGEMENT ===========
-    public AutoController addWaypoint(double x, double y) {
-        waypoints.add(new Waypoint(x, y));
-        return this;
+    /**
+     * Get the SendableChooser for external access.
+     */
+    public SendableChooser<Command> getChooser() {
+        return autoChooser;
     }
 
-    public AutoController addWaypoint(double x, double y, double heading) {
-        waypoints.add(new Waypoint(x, y, heading));
-        return this;
-    }
-
-    public AutoController addWaypointWithShoot(double x, double y, double heading) {
-        waypoints.add(new Waypoint(x, y, heading, Waypoint.WaypointAction.SHOOT));
-        return this;
-    }
-
-    public AutoController addWait(double seconds) {
-        waypoints.add(new Waypoint(Double.NaN, Double.NaN, null, Waypoint.WaypointAction.WAIT));
-        this.waitDuration = seconds;
-        return this;
-    }
-
-    public void clearWaypoints() {
-        waypoints.clear();
-        currentWaypointIndex = 0;
-        currentState = AutoState.IDLE;
-        currentTarget = null;
-        turnTarget = null;
+    /**
+     * Get the drivetrain for creating custom commands.
+     */
+    public CommandSwerveDrivetrain getDrivetrain() {
+        return drivetrain;
     }
 
     // =========== CONTROLLER INTERFACE ===========
+
     @Override
     public String getName() {
         return "AutoController";
@@ -107,183 +66,59 @@ public class AutoController implements Controller {
 
     @Override
     public void onActivate() {
-        currentWaypointIndex = 0;
-        stateStartTime = 0;
-        if (!waypoints.isEmpty()) {
-            transitionToWaypoint(0);
+        // Get the selected command from dashboard
+        currentCommand = getSelectedCommand();
+        hasScheduled = false;
+
+        if (currentCommand != null && currentCommand != Commands.none()) {
+            // Schedule the command through WPILib's scheduler
+            CommandScheduler.getInstance().schedule(currentCommand);
+            hasScheduled = true;
+            System.out.println("Scheduled auto: " + currentCommand.getName());
         } else {
-            currentState = AutoState.FINISHED;
+            System.out.println("No auto routine selected!");
         }
     }
 
     @Override
     public void onDeactivate() {
-        currentState = AutoState.IDLE;
+        // Cancel any running auto command
+        if (currentCommand != null && hasScheduled) {
+            CommandScheduler.getInstance().cancel(currentCommand);
+        }
+        currentCommand = null;
+        hasScheduled = false;
     }
 
     @Override
     public boolean isFinished() {
-        return currentState == AutoState.FINISHED;
+        if (currentCommand == null || !hasScheduled) {
+            return true;
+        }
+        return currentCommand.isFinished();
     }
 
     @Override
     public RobotAction update(RobotState state) {
-        // Initialize state start time if needed
-        if (stateStartTime == 0) {
-            stateStartTime = state.getTimestamp();
-        }
-
-        switch (currentState) {
-            case IDLE:
-                return RobotAction.none();
-
-            case DRIVING_TO_POINT:
-                return handleDrivingToPoint(state);
-
-            case TURNING:
-                return handleTurning(state);
-
-            case WAITING:
-                return handleWaiting(state);
-
-            case SHOOTING:
-                return handleShooting(state);
-
-            case FINISHED:
-                return RobotAction.drive(0, 0, 0);
-
-            default:
-                return RobotAction.none();
-        }
+        // WPILib's CommandScheduler handles command execution automatically
+        // We don't need to do anything here
+        // The scheduler runs in Robot.robotPeriodic() via CommandScheduler.getInstance().run()
+        return RobotAction.none();
     }
 
-    // =========== STATE HANDLERS ===========
-    private RobotAction handleDrivingToPoint(RobotState state) {
-        if (currentTarget == null) {
-            advanceToNextWaypoint(state);
-            return RobotAction.none();
-        }
+    // =========== CONVENIENCE METHODS ===========
 
-        double distanceToTarget = state.distanceTo(currentTarget.x, currentTarget.y);
-
-        // Check if we've arrived
-        if (distanceToTarget < positionTolerance) {
-            // Check if we need to turn to a specific heading
-            if (currentTarget.heading != null) {
-                turnTarget = currentTarget.heading;
-                currentState = AutoState.TURNING;
-                stateStartTime = state.getTimestamp();
-                return RobotAction.turnTo(turnTarget);
-            }
-
-            // Check for action at waypoint
-            if (currentTarget.action == Waypoint.WaypointAction.SHOOT) {
-                currentState = AutoState.SHOOTING;
-                stateStartTime = state.getTimestamp();
-                return RobotAction.shooter(ShooterAction.enable());
-            }
-
-            // Advance to next waypoint
-            advanceToNextWaypoint(state);
-            return RobotAction.none();
-        }
-
-        // Navigate to target
-        if (currentTarget.heading != null) {
-            return RobotAction.navigateTo(currentTarget.x, currentTarget.y, currentTarget.heading);
-        } else {
-            return RobotAction.navigateTo(currentTarget.x, currentTarget.y);
-        }
+    /**
+     * Create a custom auto command using AutoCommands factory.
+     */
+    public Command createCustomAuto(java.util.function.Function<CommandSwerveDrivetrain, Command> factory) {
+        return factory.apply(drivetrain);
     }
 
-    private RobotAction handleTurning(RobotState state) {
-        if (turnTarget == null) {
-            advanceToNextWaypoint(state);
-            return RobotAction.none();
-        }
-
-        double headingError = Math.abs(normalizeAngle(turnTarget - state.getHeadingDegrees()));
-
-        if (headingError < angleTolerance) {
-            // Done turning, check for action
-            if (currentTarget != null && currentTarget.action == Waypoint.WaypointAction.SHOOT) {
-                currentState = AutoState.SHOOTING;
-                stateStartTime = state.getTimestamp();
-                return RobotAction.shooter(ShooterAction.enable());
-            }
-
-            advanceToNextWaypoint(state);
-            return RobotAction.none();
-        }
-
-        return RobotAction.turnTo(turnTarget);
-    }
-
-    private RobotAction handleWaiting(RobotState state) {
-        double elapsed = state.getTimestamp() - stateStartTime;
-
-        if (elapsed >= waitDuration) {
-            advanceToNextWaypoint(state);
-            return RobotAction.none();
-        }
-
-        return RobotAction.drive(0, 0, 0);
-    }
-
-    private RobotAction handleShooting(RobotState state) {
-        double elapsed = state.getTimestamp() - stateStartTime;
-
-        if (elapsed >= shootDuration) {
-            advanceToNextWaypoint(state);
-            return RobotAction.shooter(ShooterAction.disable());
-        }
-
-        // Keep shooter enabled, hold position
-        return RobotAction.composite(
-            new DriveAction(0, 0, 0, true),
-            ShooterAction.enable()
-        );
-    }
-
-    // =========== HELPERS ===========
-    private void transitionToWaypoint(int index) {
-        if (index >= waypoints.size()) {
-            currentState = AutoState.FINISHED;
-            currentTarget = null;
-            return;
-        }
-
-        currentTarget = waypoints.get(index);
-
-        if (currentTarget.action == Waypoint.WaypointAction.WAIT) {
-            currentState = AutoState.WAITING;
-        } else {
-            currentState = AutoState.DRIVING_TO_POINT;
-        }
-    }
-
-    private void advanceToNextWaypoint(RobotState state) {
-        currentWaypointIndex++;
-        stateStartTime = state.getTimestamp();
-        transitionToWaypoint(currentWaypointIndex);
-    }
-
-    private double normalizeAngle(double angle) {
-        while (angle > 180) angle -= 360;
-        while (angle < -180) angle += 360;
-        return angle;
-    }
-
-    // =========== DEBUG/TELEMETRY ===========
-    public AutoState getCurrentState() {
-        return currentState;
-    }
-
-    public int getCurrentWaypointIndex() {
-        return currentWaypointIndex;
-    }
-
-    public int getTotalWaypoints() {
-        return waypoints.size();
+    /**
+     * Add a custom auto option to the chooser.
+     */
+    public void addAutoOption(String name, Command command) {
+        autoChooser.addOption(name, command);
     }
 }

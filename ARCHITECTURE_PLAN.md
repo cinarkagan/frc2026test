@@ -19,7 +19,7 @@ frc/robot/
 │   ├── AutoController.java             # State machine
 │   └── ControllerManager.java          # Controller switching
 │
-├── robot/                              # Mevcut kodlar buraya taşınacak
+├── robot/                              # Mevcut kodlar buraya taşınacak (bilerek ayrı)
 │   ├── state/
 │   │   ├── RobotState.java             # Robot → Controller veri
 │   │   └── RobotAction.java            # Controller → Robot komut
@@ -45,24 +45,29 @@ frc/robot/
     └── package-info.java
 ```
 
+## Paket ve Path Eşlemesi
+- `frc/robot/` kökü `package frc.robot;`
+- `frc/robot/controller/` -> `package frc.robot.controller;`
+- `frc/robot/robot/` -> `package frc.robot.robot;` (bilerek iki katman)
+
 ## Yeni Dosyalar
 
 ### 1. RobotState.java (robot/state/)
 Robot'un anlık durumu - Controller'a gönderilir:
 - Position: x, y (metre)
 - Heading: derece
-- Velocity: vx, vy, omega
+- Velocity: vx, vy (m/s), omega (rad/s)
 - Shooter: RPM, enabled durumu
-- Vision: tag sayısı, pose estimate
-- Timestamp
+- Vision: tag sayısı, pose estimate (Pose2d, metre/radyan)
+- Timestamp (s)
 
 ### 2. RobotAction.java (robot/state/)
 Controller'dan gelen komutlar:
-- `DRIVE`: velocityX, velocityY, rotationRate
-- `NAVIGATE`: targetX, targetY (+ opsiyonel heading)
-- `TURN`: targetAngle
+- `DRIVE`: velocityX, velocityY (m/s), rotationRate (rad/s)
+- `NAVIGATE`: targetX, targetY (m), opsiyonel heading (deg)
+- `TURN`: targetAngle (deg)
 - `SHOOTER`: enable/disable/adjustRPM
-- `COMPOSITE`: birden fazla action birleşimi
+- `COMPOSITE`: birden fazla action birleşimi (RobotCore çakışmaları çözer)
 
 ### 3. Controller.java (controller/)
 ```java
@@ -77,7 +82,7 @@ public interface Controller {
 
 ### 4. GamepadController.java (controller/)
 - Xbox controller input'larını okur
-- Stick → drive velocity
+- Stick → drive velocity (max hızlar constructor ile verilir, subsystem'e dokunmaz)
 - Bumper → shooter RPM ayarı
 - A button → turn to angle
 
@@ -100,11 +105,11 @@ autoController
 
 ### 6. RobotCore.java (robot/)
 - `buildState()`: Tüm subsystem'lerden veri toplayıp RobotState oluşturur
-- `executeAction(RobotAction)`: Action'ı subsystem komutlarına çevirir
+- `executeAction(RobotAction)`: Action'ı subsystem komutlarına çevirir; command/scheduler ile doğrudan kontrol çakışmasını engeller
 
 ### 7. ControllerManager.java (controller/)
 - Aktif controller'ı yönetir
-- Teleop ↔ Auto geçişlerini sağlar
+- Teleop ↔ Auto geçişlerini sağlar (RobotContainer sadece manager'a mod bildirir)
 
 ## Değiştirilecek Dosyalar
 
@@ -113,16 +118,17 @@ autoController
 // Her periodic'te:
 private void runControllerLoop() {
     RobotState state = robotCore.buildState();
+    Controller activeController = controllerManager.getActiveController();
     RobotAction action = activeController.update(state);
     robotCore.executeAction(action);
 }
 ```
 
 ### RobotContainer.java
-- RobotCore instance'ı oluştur
-- GamepadController ve AutoController oluştur
-- ControllerManager ile yönet
-- `prepareAutonomous()` ve `prepareTeleop()` metodları
+- RobotCore instance'ı oluşturur
+- GamepadController ve AutoController oluşturur
+- ControllerManager'ı kurar ve `getControllerManager()` ile Robot'a verir
+- `prepareAutonomous()`/`prepareTeleop()` sadece manager'a mod bildirir
 
 ## Taşınacak Dosyalar
 
@@ -134,16 +140,17 @@ private void runControllerLoop() {
 
 ## İmplementasyon Sırası
 
-1. Klasör yapısını oluştur
-2. Mevcut dosyaları taşı ve package'ları güncelle
-3. RobotState ve RobotAction sınıflarını yaz
+1. Klasör yapısını oluştur ve package path eşlemesini doğrula (`frc.robot.robot` bilerek)
+2. Mevcut dosyaları taşı ve package/import'ları güncelle
+3. RobotState ve RobotAction sınıflarını (unit'lerle) yaz
 4. Controller interface'ini yaz
-5. RobotCore sınıfını yaz
-6. GamepadController'ı implemente et
-7. AutoController state machine'i implemente et
-8. ControllerManager'ı yaz
-9. Robot.java ve RobotContainer.java'yı güncelle
-10. Test et
+5. RobotCore sınıfını yaz ve action çakışma kurallarını belirle
+6. GamepadController'ı implemente et (max hızlar constructor ile gelir)
+7. AutoController state machine'i implemente et (waypoint + opsiyonel heading)
+8. ControllerManager'ı yaz ve aktif controller seçim akışını tanımla
+9. RobotContainer: controller'ları kur, manager'ı Robot'a ver, mod bildirimlerini ekle
+10. Robot.java: controller loop'u ve CommandScheduler akışını güncelle
+11. Test et
 
 ## Navigation Yaklaşımı
 
@@ -151,13 +158,14 @@ private void runControllerLoop() {
 - X ve Y eksenleri için ayrı PID controller
 - Hedef pozisyona ulaşana kadar velocity komutu
 - Tolerance: 0.15m pozisyon, 3° açı
+- Opsiyonel heading varsa: aynı anda heading kontrolü yapılır, yoksa mevcut heading korunur
 
 ## WPILib Command Entegrasyonu
 
 - `CommandScheduler.run()` hala çalışmaya devam eder
 - Subsystem `periodic()` metodları çalışır
-- TURN action için mevcut TurnToAngle command'ı kullanılır
-- NAVIGATE action için RobotCore içinde PID kontrolü yapılır
+- TURN action için mevcut `TurnToAngle` command'ı schedule edilir
+- NAVIGATE action için RobotCore içinde PID kontrolü yapılır (heading varsa ya dahili PID ya da TurnToAngle ile koordine edilir)
 
 ## Verification
 

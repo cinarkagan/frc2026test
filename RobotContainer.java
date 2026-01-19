@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 
@@ -59,7 +58,7 @@ public class RobotContainer {
 
         // Initialize controllers
         gamepadController = new GamepadController(joystick, maxSpeed, maxAngularRate);
-        autoController = new AutoController();
+        autoController = new AutoController(drivetrain);
 
         // Initialize controller manager with gamepad as default
         controllerManager = new ControllerManager(gamepadController);
@@ -69,6 +68,9 @@ public class RobotContainer {
 
         // Register telemetry
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        // Configure PathPlanner (when vendordeps is added)
+        drivetrain.configurePathPlanner();
     }
 
     private void configureBindings() {
@@ -90,16 +92,7 @@ public class RobotContainer {
      * Prepare autonomous mode.
      */
     public void prepareAutonomous() {
-        // Clear and configure auto routine
-        autoController.clearWaypoints();
-
-        // Example auto routine
-        autoController
-            .addWaypoint(2.0, 0.0)
-            .addWaypoint(2.0, 1.0, 90.0)
-            .addWaypointWithShoot(3.0, 1.0, 45.0);
-
-        // Switch to auto controller
+        // Switch to auto controller - it will use the SendableChooser selection
         controllerManager.setActiveController(autoController);
     }
 
@@ -110,12 +103,15 @@ public class RobotContainer {
         controllerManager.setActiveController(gamepadController);
     }
 
+    /**
+     * Get the autonomous command from the auto controller.
+     * This can be used by Robot.java if using standard WPILib autonomous.
+     */
     public Command getAutonomousCommand() {
-        // Return empty command - auto is now handled by controller
-        return Commands.none();
+        return autoController.getSelectedCommand();
     }
 
-    // Getters for subsystems (for backward compatibility)
+    // Getters for subsystems
     public CommandSwerveDrivetrain getDrivetrain() {
         return drivetrain;
     }

@@ -16,6 +16,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.measure.Angle;
@@ -27,6 +28,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.robot.constants.SwerveConstants.TunerSwerveDrivetrain;
+
+// PathPlanner imports - uncomment when PathPlanner is added to vendordeps
+// import com.pathplanner.lib.auto.AutoBuilder;
+// import com.pathplanner.lib.config.PIDConstants;
+// import com.pathplanner.lib.config.RobotConfig;
+// import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -323,5 +330,85 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     @Override
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
+    }
+
+    // =========== PATHPLANNER INTEGRATION ===========
+
+    /** Swerve request for applying robot-relative speeds */
+    private final SwerveRequest.ApplyRobotSpeeds m_applyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
+
+    /**
+     * Get the current pose of the robot.
+     * Required for PathPlanner AutoBuilder.
+     */
+    public Pose2d getPose() {
+        return getState().Pose;
+    }
+
+    /**
+     * Reset the robot's pose to the given pose.
+     * Required for PathPlanner AutoBuilder.
+     */
+    public void resetPose(Pose2d pose) {
+        this.seedFieldCentric();
+        super.resetPose(pose);
+    }
+
+    /**
+     * Get the robot-relative chassis speeds.
+     * Required for PathPlanner AutoBuilder.
+     */
+    public ChassisSpeeds getRobotRelativeSpeeds() {
+        return getState().Speeds;
+    }
+
+    /**
+     * Drive the robot using robot-relative chassis speeds.
+     * Required for PathPlanner AutoBuilder.
+     */
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        setControl(m_applyRobotSpeeds.withSpeeds(speeds));
+    }
+
+    /**
+     * Drive the robot using field-relative chassis speeds.
+     */
+    public void driveFieldRelative(ChassisSpeeds fieldRelativeSpeeds) {
+        ChassisSpeeds robotRelative = ChassisSpeeds.fromFieldRelativeSpeeds(
+            fieldRelativeSpeeds,
+            getPose().getRotation()
+        );
+        driveRobotRelative(robotRelative);
+    }
+
+    /**
+     * Configure PathPlanner AutoBuilder.
+     * Call this in RobotContainer after creating the drivetrain.
+     *
+     * TODO: Uncomment and configure when PathPlanner is added to vendordeps
+     */
+    public void configurePathPlanner() {
+        // try {
+        //     RobotConfig config = RobotConfig.fromGUISettings();
+        //
+        //     AutoBuilder.configure(
+        //         this::getPose,
+        //         this::resetPose,
+        //         this::getRobotRelativeSpeeds,
+        //         (speeds, feedforwards) -> driveRobotRelative(speeds),
+        //         new PPHolonomicDriveController(
+        //             // Translation PID - PLACEHOLDER, needs tuning
+        //             new PIDConstants(5.0, 0.0, 0.0),
+        //             // Rotation PID - PLACEHOLDER, needs tuning
+        //             new PIDConstants(5.0, 0.0, 0.0)
+        //         ),
+        //         config,
+        //         // Flip paths for red alliance
+        //         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+        //         this
+        //     );
+        // } catch (Exception e) {
+        //     DriverStation.reportError("Failed to configure PathPlanner: " + e.getMessage(), e.getStackTrace());
+        // }
     }
 }
