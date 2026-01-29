@@ -17,23 +17,25 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.ShooterConstants;
+import frc.robot.utils.AllStates;
+import frc.robot.utils.AllStates.ShooterStates;
 
 
 public class ShooterSubsystem extends SubsystemBase {
     
-  private final TalonFX shooter1 = new TalonFX(ShooterConstants.shooter1_ID, ShooterConstants.canbus);
-  private final TalonFX shooter2 = new TalonFX(ShooterConstants.shooter2_ID, ShooterConstants.canbus);
-  private final TalonFX feeder = new TalonFX(ShooterConstants.feeder_ID, ShooterConstants.canbus);
+    private final TalonFX shooter1 = new TalonFX(ShooterConstants.shooter1_ID, ShooterConstants.canbus);
+    private final TalonFX shooter2 = new TalonFX(ShooterConstants.shooter2_ID, ShooterConstants.canbus);
+    private final TalonFX feeder = new TalonFX(ShooterConstants.feeder_ID, ShooterConstants.canbus);
 
-
-  public boolean enabled = false;
-  public double goalRPM = 2800;
-  public double goalRPM2 = 3350;
-
+    public double goalRPM = ShooterConstants.IDLE_RPM;
+    public double goalRPM2 = -ShooterConstants.IDLE_RPM;
+    public double customRPM = 3500;
     private final VelocityVoltage m_velocityVoltage = new VelocityVoltage(0).withSlot(0);
 
     public TalonFXConfiguration configs_shooter = new TalonFXConfiguration();
     public TalonFXConfiguration configs_feeder = new TalonFXConfiguration();
+    public AllStates.ShooterStates currentState = ShooterStates.IDLE;
+    public AllStates.ShooterStates requestedState = ShooterStates.IDLE;
 
     public ShooterSubsystem() {
             /* Voltage-based velocity requires a velocity feed forward to account for the back-emf of the motor */
@@ -64,27 +66,58 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-            //System.out.println(goalRPM);
-            //System.out.println(shooter1.getVelocity().getValueAsDouble()*60);
-            //System.out.println(shooter2.getVelocity().getValueAsDouble()*60);
-            //System.out.println((shooter1.getVelocity().getValueAsDouble()*60)/(1.5));
+            stateMachine();
             shooter1.setControl(m_velocityVoltage.withVelocity(-(goalRPM/60)));
             shooter2.setControl(m_velocityVoltage.withVelocity(goalRPM2/60));
             feeder.setControl(m_velocityVoltage.withVelocity(-(ShooterConstants.feederRPM/60)));
     }
 
-    public Command enableShooter(){
-        return new InstantCommand(()->{enabled = true;},this);
+    public void requestState(ShooterStates state){requestedState = state;}
+    public void customRequest(double rpm){
+        requestState(ShooterStates.CUSTOM);
+        customRPM = rpm;
     }
 
-    public Command disableShooter(){
-        return new InstantCommand(()->{enabled = false;},this);
+    public void stateMachine() {
+        if (currentState == requestedState){
+                switch(currentState) {
+                    case IDLE:
+                        goalRPM = ShooterConstants.IDLE_RPM;
+                        goalRPM2 = -ShooterConstants.IDLE_RPM;
+                        break;
+                    case KILL:
+                        goalRPM = 0;
+                        goalRPM2 = 0;
+                        break;
+                    case P1_SHOOT:
+                        goalRPM = ShooterConstants.P1_RPM;
+                        goalRPM2 = -ShooterConstants.P1_RPM;
+                        break;
+                    case P2_SHOOT:
+                        goalRPM = ShooterConstants.P2_RPM;
+                        goalRPM2 = -ShooterConstants.P2_RPM;
+                        break;
+                    case LOW_POWER:
+                        goalRPM = ShooterConstants.LOW_POWER_RPM;
+                        goalRPM2 = -ShooterConstants.LOW_POWER_RPM;
+                        break;
+                    case CUSTOM:
+                        goalRPM = customRPM;
+                        goalRPM2 = -customRPM;
+                        break;
+
+                }
+        } else {
+            currentState = requestedState;
+            stateMachine();
+        }
     }
+    
 
     public Command increaseShooter(){
-        return new InstantCommand(()->{goalRPM = goalRPM+100;},this);
+        return new InstantCommand(()->{customRequest(customRPM+100);},this);
     }
     public Command decreaseShooter(){
-        return new InstantCommand(()->{goalRPM = goalRPM-100;},this);
+        return new InstantCommand(()->{customRequest(customRPM-100);},this);
     }
 }

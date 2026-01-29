@@ -11,4 +11,10 @@ public class ShooterConstants {
     public static int feeder_ID = 25;
 
     public static double feederRPM = 2000;
+
+    public static double P1_RPM = 4100;
+    public static double P2_RPM = 4100;
+    public static double IDLE_RPM = 2000;
+    public static double LOW_POWER_RPM = 1000;
+
 }
