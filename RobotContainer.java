@@ -29,7 +29,7 @@ import frc.robot.subsystems.LocalizationSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.utils.Container;
 import frc.robot.utils.FuelSim;
-
+import frc.robot.subsystems.LEDController;
 public class RobotContainer {
     private boolean simulationMode = Container.simulationMode;
     private final Telemetry logger = new Telemetry(TeleopConstants.MaxSpeed);
@@ -42,10 +42,11 @@ public class RobotContainer {
     //private final SlewRateLimiter limiter = new SlewRateLimiter(0.8);
     public final LocalizationSubsystem localizationSubsystem = new LocalizationSubsystem(drivetrain);
     public Teleop teleopController = new Teleop(logger, drivetrain, shooterSubsystem, joystick);
-    
+    public LEDController ledController = new LEDController(0,32);
     public RobotContainer() {
         teleopController.getInitializeFunction();
         configureFuelSim();
+        ledController.setMultiple2(0.5,0.1, 0, 255, 0);
     }
 
     public Command getAutonomousCommand() {
