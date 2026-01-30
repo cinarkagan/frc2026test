@@ -6,4 +6,6 @@ public interface Controller {
     Command getAutonomousCommand();
     void getInitializeFunction();
     void configureBindings();
+    void simulationPeriodic();
+    void periodic();
 }

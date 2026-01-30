@@ -7,8 +7,11 @@ package frc.robot;
 import com.ctre.phoenix6.HootAutoReplay;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.shooter.ShooterSimulation;
+import frc.robot.utils.Container;
 import frc.robot.utils.FuelSim;
 
 public class Robot extends TimedRobot {
@@ -82,5 +85,6 @@ public class Robot extends TimedRobot {
     @Override
     public void simulationPeriodic() {
         FuelSim.getInstance().updateSim();
+        SmartDashboard.putNumber("Fuel Count",Container.fuelCount);
     }
 }

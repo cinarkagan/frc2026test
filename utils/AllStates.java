@@ -12,9 +12,7 @@ public class AllStates {
     public static enum MachineStates {
         P1_SHOOT,
         P2_SHOOT,
-        IDLE,
-        LOW_POWER,
-        KILL,
-        INTAKE
+        CUSTOM_SHOOT,
+        IDLE
     }
 }
