@@ -11,6 +11,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.constants.SimulationConstants;
@@ -40,6 +41,9 @@ public class ShooterSimulation extends SubsystemBase implements Shooter {
 
         Translation3d initialPosition = new Translation3d(robot.getTranslation().getX(),robot.getTranslation().getY(),SimulationConstants.ShooterConstants.ShooterHeight);
         FuelSim.getInstance().spawnFuel(initialPosition, getLaunchVelocities(robot,goalRPM));//launchVel(vel, angle) with calc
+    }
+    public Command launchFuelCommand() {
+        return new InstantCommand(()->{launchFuel();});
     }
     public Translation3d getLaunchVelocities(Pose2d robot,double rpm) {
         double heading = robot.getRotation().getRadians();

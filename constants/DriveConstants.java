@@ -14,6 +14,4 @@ public class DriveConstants {
     public static double turnToleranceDegPerSec = 5;
     public static double toleranceYCM = 5;
     public static double toleranceXCM = 5;
-    public static double goalX = 25;
-    public static double goalY = 25;
 }

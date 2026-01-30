@@ -44,15 +44,12 @@ public class Teleop implements Controller {
         this.machineSubsystem = machineSubsystem;
     }
     @Override
-    public Command getAutonomousCommand() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    @Override
     public void getInitializeFunction() {
         configureBindings();
     }
-    @Override
+    public ShooterSimulation getShooterSimulation() {
+        return shooterSimulation;
+    }
     public void configureBindings() {
         // TODO Auto-generated method stub
         if (simulationMode) {

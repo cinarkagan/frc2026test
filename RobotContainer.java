@@ -25,6 +25,8 @@ import frc.robot.commands.TurnToAngle;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.constants.SwerveConstants;
 import frc.robot.constants.TeleopConstants;
+import frc.robot.controllers.AiController;
+import frc.robot.controllers.Autonomous;
 import frc.robot.controllers.Teleop;
 import frc.robot.controllers.Teleop;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -42,14 +44,16 @@ public class RobotContainer {
 
     public final MachineSubsystem machineSubsystem = new MachineSubsystem(drivetrain);
     public Teleop teleopController = new Teleop(logger, drivetrain, machineSubsystem);
-    
+    public Autonomous autonomousController = new Autonomous(logger, drivetrain, machineSubsystem);
+    public AiController aiController = new AiController(drivetrain, teleopController.getShooterSimulation());
     public RobotContainer() {
         teleopController.getInitializeFunction();
         configureFuelSim();
     }
 
     public Command getAutonomousCommand() {
-        return new PathPlannerAuto("New Auto");
+        return aiController.getAutonomousCommand();
+        //return autonomousController.getAutonomousCommand();
     }
     public void simulationPeriodic() {
         teleopController.simulationPeriodic();

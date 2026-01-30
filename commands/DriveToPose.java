@@ -12,6 +12,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.DriveConstants;
+import frc.robot.constants.TeleopConstants;
+import frc.robot.controllers.Teleop;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 
 public class DriveToPose extends Command {
@@ -21,12 +23,12 @@ public class DriveToPose extends Command {
     SwerveRequest.FieldCentric drive;
     double MaxAngularRate;
     double MaxDriveRate;
-    public DriveToPose(CommandSwerveDrivetrain drivetrain, double MaxDriveRate, double MaxAngularRate) {
+    public DriveToPose(CommandSwerveDrivetrain drivetrain, Pose2d goalPose) {
         controllerX = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
         controllerY = new PIDController(DriveConstants.driveP, DriveConstants.driveI, DriveConstants.driveD);
         this.drivetrain = drivetrain;
-        this.MaxDriveRate = MaxDriveRate;
-        this.MaxAngularRate = MaxAngularRate;
+        this.MaxDriveRate = TeleopConstants.MaxSpeed;
+        this.MaxAngularRate = TeleopConstants.MaxAngularRate;
         this.drive = new SwerveRequest.FieldCentric()
                 .withDeadband(MaxDriveRate*0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
                 .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
@@ -35,10 +37,10 @@ public class DriveToPose extends Command {
         // Set the controller tolerance - the delta tolerance ensures the robot is stationary at the
         // setpoint before it is considered as having reached the reference
         controllerX.setTolerance(DriveConstants.toleranceXCM/100);
-        controllerX.setSetpoint(DriveConstants.goalX);
+        controllerX.setSetpoint(goalPose.getX());
         //controllerY.enableContinuousInput(-1, 1);
         controllerY.setTolerance(DriveConstants.toleranceYCM/100);
-        controllerY.setSetpoint(DriveConstants.goalY);
+        controllerY.setSetpoint(goalPose.getY());
         addRequirements(drivetrain);
     }
     @Override
