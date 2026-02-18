@@ -57,16 +57,20 @@ public class LocalizationSubsystem extends SubsystemBase {
             }
             if (limelightMeasurementEstimate!= null){SmartDashboard.putNumber("xll3a", limelightMeasurementEstimate.pose.getX());}
             if (limelightMeasurementEstimate4!= null){SmartDashboard.putNumber("xll4", limelightMeasurementEstimate4.pose.getX());}
-            if (limelightMeasurementEstimate!= null){SmartDashboard.putNumber("ambiguity ll3a",limelightMeasurementEstimate.rawFiducials[0].ambiguity);}
-            if (limelightMeasurementEstimate4!= null){SmartDashboard.putNumber("ambiguity ll4",limelightMeasurementEstimate4.rawFiducials[0].ambiguity);}   
+            if (limelightMeasurementEstimate!= null&&limelightMeasurementEstimate.tagCount > 0){SmartDashboard.putNumber("ambiguity ll3a",limelightMeasurementEstimate.rawFiducials[0].ambiguity);}
+            if (limelightMeasurementEstimate4!= null&&limelightMeasurementEstimate4.tagCount > 0){SmartDashboard.putNumber("ambiguity ll4",limelightMeasurementEstimate4.rawFiducials[0].ambiguity);}   
+            LimelightHelpers.PoseEstimate finalEstimate = null;
+                        if (limelightMeasurementEstimate!= null&&limelightMeasurementEstimate.tagCount > 0) {
+
             if (limelightMeasurementEstimate.rawFiducials[0].ambiguity > 0.7){
                 limelightMeasurementEstimate = null;
-            }
+            } }
+            if (limelightMeasurementEstimate4!= null&&limelightMeasurementEstimate4.tagCount > 0) {
             if (limelightMeasurementEstimate4.rawFiducials[0].ambiguity > 0.7){
                 limelightMeasurementEstimate4 = null;
-            }
-            LimelightHelpers.PoseEstimate finalEstimate = null;
-            if (limelightMeasurementEstimate != null && limelightMeasurementEstimate4 != null) {
+            }   }
+            if (limelightMeasurementEstimate != null && limelightMeasurementEstimate4 != null&&limelightMeasurementEstimate4.tagCount > 0&&limelightMeasurementEstimate.tagCount > 0) {
+                        
                 if (limelightMeasurementEstimate.rawFiducials[0].ambiguity < 0.4 && limelightMeasurementEstimate.rawFiducials[0].ambiguity < 0.4) {
                     double avgx = (limelightMeasurementEstimate.pose.getX()+limelightMeasurementEstimate4.pose.getX())/2;
                     double avgy = (limelightMeasurementEstimate.pose.getY()+limelightMeasurementEstimate4.pose.getY())/2;
@@ -78,20 +82,18 @@ public class LocalizationSubsystem extends SubsystemBase {
                 } else {
                     finalEstimate = limelightMeasurementEstimate;
                 }
-            } else if (limelightMeasurementEstimate != null) {
+            } else if (limelightMeasurementEstimate != null&&limelightMeasurementEstimate.tagCount > 0) {
                 finalEstimate = limelightMeasurementEstimate;
-            } else if (limelightMeasurementEstimate4 != null) {
+            } else if (limelightMeasurementEstimate4 != null&&limelightMeasurementEstimate4.tagCount > 0) {
                 finalEstimate = limelightMeasurementEstimate4;
             } 
 
             if ((finalEstimate != null)&&(finalEstimate.tagCount > 0)) {
                 drivetrain.setVisionMeasurementStdDevs(VecBuilder.fill(.5, .5, 9999999));
                 drivetrain.addVisionMeasurement(
-                        limelightMeasurementEstimate.pose,
-                        limelightMeasurementEstimate.timestampSeconds);
-                currentPoseEstimate = limelightMeasurementEstimate;
-            }
-            if (finalEstimate != null) {
+                        finalEstimate.pose,
+                        finalEstimate.timestampSeconds);
+                currentPoseEstimate = finalEstimate;
                 SmartDashboard.putNumber("finalx", finalEstimate.pose.getX());
             }
     }
